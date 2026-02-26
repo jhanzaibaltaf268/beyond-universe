@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>COSMO — Explore the Universe</title>
+<meta name="description" content="A journey through the cosmos. Discover planets, stars, and the mysteries of deep space."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ─── RESET & VARS ─────────────────────────────── */
+:root {
+  --black:   #03050d;
+  --deep:    #070b1a;
+  --navy:    #0d1535;
+  --accent:  #4fc3f7;
+  --accent2: #7c4dff;
+  --gold:    #ffd54f;
+  --text:    #e8eef8;
+  --text2:   #8899bb;
+  --border:  rgba(79,195,247,.15);
+  --glow:    0 0 40px rgba(79,195,247,.25);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--black);
+  color: var(--text);
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ─── CUSTOM CURSOR ────────────────────────────── */
+.cursor {
+  width: 12px; height: 12px;
+  background: var(--accent);
+  border-radius: 50%;
+  position: fixed; top: 0; left: 0;
+  pointer-events: none; z-index: 9999;
+  transform: translate(-50%,-50%);
+  transition: transform .1s, width .2s, height .2s, opacity .2s;
+  mix-blend-mode: screen;
+}
+.cursor-ring {
+  width: 36px; height: 36px;
+  border: 1.5px solid rgba(79,195,247,.5);
+  border-radius: 50%;
+  position: fixed; top: 0; left: 0;
+  pointer-events: none; z-index: 9998;
+  transform: translate(-50%,-50%);
+  transition: transform .18s ease, width .2s, height .2s;
+}
+
+/* ─── STAR CANVAS ──────────────────────────────── */
+#star-canvas {
+  position: fixed; inset: 0;
+  z-index: 0; pointer-events: none;
+}
+
+/* ─── LAYOUT ───────────────────────────────────── */
+.wrap { max-width: 1160px; margin: 0 auto; padding: 0 28px; position: relative; z-index: 2; }
+
+/* ─── NAV ──────────────────────────────────────── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 100; padding: 20px 0;
+  transition: background .4s, backdrop-filter .4s, padding .4s;
+}
+nav.scrolled {
+  background: rgba(3,5,13,.88);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 0;
+}
+.nav-inner {
+  display: flex; align-items: center;
+  justify-content: space-between;
+}
+.nav-logo {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.4rem; font-weight: 900;
+  color: var(--text); letter-spacing: .12em;
+}
+.nav-logo span { color: var(--accent); }
+.nav-links { display: flex; gap: 6px; align-items: center; }
+.nav-link {
+  padding: 7px 16px;
+  font-size: .88rem; font-weight: 500;
+  color: var(--text2); border-radius: 8px;
+  text-decoration: none;
+  transition: color .2s, background .2s;
+}
+.nav-link:hover { color: var(--accent); background: rgba(79,195,247,.08); }
+.nav-cta {
+  padding: 9px 22px;
+  background: var(--accent); color: #000;
+  font-weight: 700; font-size: .88rem;
+  border-radius: 8px; text-decoration: none;
+  transition: box-shadow .2s, transform .15s;
+  box-shadow: 0 0 20px rgba(79,195,247,.35);
+}
+.nav-cta:hover { transform: translateY(-2px); box-shadow: 0 0 35px rgba(79,195,247,.55); }
+
+/* ─── HERO ─────────────────────────────────────── */
+.hero {
+  min-height: 100vh;
+  display: flex; align-items: center;
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute; inset: 0; z-index: 1;
+  background:
+    radial-gradient(ellipse 80% 60% at 60% 40%, rgba(124,77,255,.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 20% 70%, rgba(79,195,247,.1) 0%, transparent 55%);
+}
+.hero-content {
+  position: relative; z-index: 2;
+  max-width: 720px;
+  animation: fadeUp .9s ease both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(79,195,247,.1);
+  border: 1px solid rgba(79,195,247,.3);
+  border-radius: 100px; padding: 6px 16px;
+  font-size: .78rem; font-weight: 600;
+  color: var(--accent); letter-spacing: .1em;
+  text-transform: uppercase; margin-bottom: 28px;
+  animation: fadeUp .9s .1s ease both;
+}
+.pulse-dot {
+  width: 7px; height: 7px;
+  background: var(--accent); border-radius: 50%;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.7)} }
+.hero h1 {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(2.8rem, 7vw, 5.5rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: .03em;
+  margin-bottom: 24px;
+  animation: fadeUp .9s .2s ease both;
+}
+.hero h1 .line2 {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: block;
+}
+.hero-sub {
+  font-size: 1.15rem; color: var(--text2);
+  line-height: 1.75; margin-bottom: 40px;
+  max-width: 540px; font-weight: 400;
+  animation: fadeUp .9s .3s ease both;
+}
+.hero-btns {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  animation: fadeUp .9s .4s ease both;
+}
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 32px;
+  background: var(--accent); color: #000;
+  font-weight: 700; font-size: 1rem;
+  border-radius: 10px; text-decoration: none;
+  transition: transform .15s, box-shadow .2s;
+  box-shadow: 0 0 30px rgba(79,195,247,.4);
+}
+.btn-primary:hover { transform: translateY(-3px); box-shadow: 0 0 50px rgba(79,195,247,.6); }
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 32px;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--text); font-weight: 600;
+  font-size: 1rem; border-radius: 10px;
+  text-decoration: none;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); background: rgba(79,195,247,.06); }
+
+/* Floating planet */
+.hero-planet {
+  position: absolute; right: -60px; top: 50%;
+  transform: translateY(-50%);
+  width: 520px; height: 520px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%,
+    #1a3a6e 0%, #0a1a40 40%, #050e25 70%, #020810 100%);
+  box-shadow:
+    inset -40px -20px 80px rgba(0,0,0,.8),
+    inset 30px 20px 60px rgba(79,195,247,.12),
+    0 0 100px rgba(79,195,247,.15),
+    0 0 200px rgba(124,77,255,.08);
+  animation: float 8s ease-in-out infinite;
+  z-index: 1;
+}
+.hero-planet::before {
+  content: '';
+  position: absolute; top: 12%; left: 8%;
+  width: 60%; height: 20%;
+  background: rgba(79,195,247,.06);
+  border-radius: 50%; transform: rotate(-20deg);
+  filter: blur(8px);
+}
+.hero-planet::after {
+  content: '';
+  position: absolute;
+  width: 140%; height: 40%;
+  border: 2px solid rgba(79,195,247,.12);
+  border-radius: 50%;
+  top: 50%; left: -20%;
+  transform: translateY(-50%) rotateX(75deg);
+}
+@keyframes float {
+  0%,100% { transform: translateY(-50%) translateY(0); }
+  50%      { transform: translateY(-50%) translateY(-24px); }
+}
+
+/* ─── STATS BAR ─────────────────────────────────── */
+.stats-bar {
+  background: rgba(13,21,53,.6);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  padding: 28px 0;
+  position: relative; z-index: 2;
+}
+.stats-inner {
+  display: flex; gap: 0;
+  justify-content: center;
+}
+.stat-item {
+  flex: 1; text-align: center;
+  padding: 0 24px;
+  border-right: 1px solid var(--border);
+}
+.stat-item:last-child { border-right: none; }
+.stat-num {
+  font-family: 'Orbitron', monospace;
+  font-size: 2rem; font-weight: 700;
+  color: var(--accent); line-height: 1;
+  display: block; margin-bottom: 6px;
+}
+.stat-lbl {
+  font-size: .8rem; color: var(--text2);
+  font-weight: 500; text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+/* ─── SECTION SHARED ────────────────────────────── */
+section { padding: 96px 0; position: relative; z-index: 2; }
+.section-tag {
+  font-size: .75rem; font-weight: 700;
+  color: var(--accent); text-transform: uppercase;
+  letter-spacing: .14em; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-tag::before {
+  content: ''; display: block;
+  width: 28px; height: 1.5px;
+  background: var(--accent);
+}
+.section-title {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 700; line-height: 1.2;
+  margin-bottom: 16px; letter-spacing: .03em;
+}
+.section-sub {
+  font-size: 1rem; color: var(--text2);
+  max-width: 520px; line-height: 1.75;
+  margin-bottom: 56px;
+}
+
+/* ─── PLANETS SECTION ───────────────────────────── */
+.planets-section { background: var(--deep); }
+.planets-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.planet-card {
+  background: linear-gradient(135deg, rgba(13,21,53,.9), rgba(7,11,26,.95));
+  border: 1px solid var(--border);
+  border-radius: 20px; padding: 32px 28px;
+  position: relative; overflow: hidden;
+  transition: transform .25s, border-color .25s, box-shadow .25s;
+  cursor: default;
+}
+.planet-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(79,195,247,.4);
+  box-shadow: 0 20px 60px rgba(79,195,247,.12);
+}
+.planet-card::before {
+  content: '';
+  position: absolute; top: -60px; right: -60px;
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  opacity: .6;
+  transition: opacity .3s, transform .3s;
+}
+.planet-card:hover::before { opacity: .9; transform: scale(1.1); }
+.card-mercury::before { background: radial-gradient(circle, #8a7a6a, #4a3a2a); }
+.card-venus::before   { background: radial-gradient(circle, #e8a040, #8a4010); }
+.card-earth::before   { background: radial-gradient(circle, #2a7adb, #0a3a6a); }
+.card-mars::before    { background: radial-gradient(circle, #c04020, #601808); }
+.card-jupiter::before { background: radial-gradient(circle, #c89060, #7a4a20); }
+.card-saturn::before  { background: radial-gradient(circle, #d4aa70, #8a6a30); }
+.planet-num {
+  font-family: 'Orbitron', monospace;
+  font-size: .7rem; color: var(--text2);
+  letter-spacing: .1em; margin-bottom: 80px;
+}
+.planet-name {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.3rem; font-weight: 700;
+  margin-bottom: 8px; letter-spacing: .06em;
+}
+.planet-type {
+  font-size: .78rem; color: var(--accent);
+  font-weight: 600; text-transform: uppercase;
+  letter-spacing: .1em; margin-bottom: 16px;
+}
+.planet-desc {
+  font-size: .9rem; color: var(--text2);
+  line-height: 1.7;
+}
+.planet-stat {
+  display: flex; justify-content: space-between;
+  margin-top: 20px; padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: .8rem;
+}
+.planet-stat-item { text-align: center; }
+.planet-stat-val { color: var(--accent); font-weight: 700; display: block; }
+.planet-stat-key { color: var(--text2); font-size: .72rem; margin-top: 2px; }
+
+/* ─── MISSIONS SECTION ──────────────────────────── */
+.missions-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.mission-card {
+  background: rgba(13,21,53,.5);
+  border: 1px solid var(--border);
+  border-radius: 16px; padding: 28px;
+  display: flex; gap: 20px; align-items: flex-start;
+  transition: border-color .2s, background .2s;
+}
+.mission-card:hover {
+  border-color: rgba(79,195,247,.3);
+  background: rgba(13,21,53,.8);
+}
+.mission-icon {
+  width: 52px; height: 52px; flex-shrink: 0;
+  background: rgba(79,195,247,.1);
+  border: 1px solid rgba(79,195,247,.25);
+  border-radius: 14px;
+  display: flex; align-items: center;
+  justify-content: center; font-size: 1.5rem;
+}
+.mission-content h4 {
+  font-family: 'Orbitron', monospace;
+  font-size: .95rem; font-weight: 700;
+  margin-bottom: 6px; letter-spacing: .04em;
+}
+.mission-content p {
+  font-size: .88rem; color: var(--text2);
+  line-height: 1.65;
+}
+.mission-tag {
+  display: inline-block; margin-top: 10px;
+  padding: 3px 10px; border-radius: 100px;
+  font-size: .7rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .07em;
+}
+.tag-active   { background: rgba(79,195,247,.15); color: var(--accent); }
+.tag-complete { background: rgba(79,195,247,.08); color: var(--text2); }
+.tag-planned  { background: rgba(124,77,255,.15); color: #b39ddb; }
+
+/* ─── TIMELINE ──────────────────────────────────── */
+.timeline-section { background: var(--deep); }
+.timeline {
+  position: relative; max-width: 680px;
+  margin: 0 auto;
+}
+.timeline::before {
+  content: '';
+  position: absolute; left: 20px; top: 0; bottom: 0;
+  width: 1px; background: linear-gradient(180deg, transparent, var(--accent), transparent);
+}
+.timeline-item {
+  display: flex; gap: 32px;
+  margin-bottom: 44px; position: relative;
+  animation: fadeUp .6s ease both;
+}
+.timeline-item:nth-child(1) { animation-delay: .1s; }
+.timeline-item:nth-child(2) { animation-delay: .2s; }
+.timeline-item:nth-child(3) { animation-delay: .3s; }
+.timeline-item:nth-child(4) { animation-delay: .4s; }
+.timeline-item:nth-child(5) { animation-delay: .5s; }
+.timeline-dot {
+  width: 40px; height: 40px; flex-shrink: 0;
+  border-radius: 50%; border: 2px solid var(--accent);
+  background: var(--black);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; position: relative; z-index: 1;
+  box-shadow: 0 0 16px rgba(79,195,247,.3);
+}
+.timeline-body { padding-top: 6px; }
+.timeline-year {
+  font-family: 'Orbitron', monospace;
+  font-size: .78rem; color: var(--accent);
+  font-weight: 700; letter-spacing: .1em;
+  margin-bottom: 6px;
+}
+.timeline-title {
+  font-size: 1.05rem; font-weight: 700;
+  margin-bottom: 6px; color: var(--text);
+}
+.timeline-desc {
+  font-size: .9rem; color: var(--text2); line-height: 1.7;
+}
+
+/* ─── CTA SECTION ───────────────────────────────── */
+.cta-section {
+  text-align: center;
+  background: radial-gradient(ellipse 80% 60% at 50% 50%,
+    rgba(79,195,247,.07) 0%, transparent 70%);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.cta-section .section-title { margin-bottom: 20px; }
+.cta-section .section-sub {
+  margin: 0 auto 40px; text-align: center;
+}
+.cta-section .hero-btns { justify-content: center; }
+
+/* ─── FOOTER ────────────────────────────────────── */
+footer {
+  background: var(--deep);
+  border-top: 1px solid var(--border);
+  padding: 52px 0 28px; position: relative; z-index: 2;
+}
+.footer-grid {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 40px; margin-bottom: 48px;
+}
+.footer-brand p {
+  font-size: .9rem; color: var(--text2);
+  line-height: 1.75; margin: 14px 0 20px;
+  max-width: 260px;
+}
+.footer-socials { display: flex; gap: 8px; }
+.social-btn {
+  width: 36px; height: 36px;
+  background: rgba(79,195,247,.08);
+  border: 1px solid var(--border);
+  border-radius: 9px; font-size: .9rem;
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none; transition: background .2s, border-color .2s;
+}
+.social-btn:hover { background: rgba(79,195,247,.18); border-color: var(--accent); }
+.footer-col h5 {
+  font-family: 'Orbitron', monospace;
+  font-size: .75rem; font-weight: 700;
+  color: var(--text); text-transform: uppercase;
+  letter-spacing: .12em; margin-bottom: 16px;
+}
+.footer-col ul { list-style: none; }
+.footer-col li { margin-bottom: 10px; }
+.footer-col a {
+  font-size: .88rem; color: var(--text2);
+  text-decoration: none;
+  transition: color .15s;
+}
+.footer-col a:hover { color: var(--accent); }
+.footer-bottom {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: .82rem; color: var(--text2);
+  flex-wrap: wrap; gap: 12px;
+}
+.footer-legal { display: flex; gap: 20px; }
+.footer-legal a {
+  color: var(--text2); text-decoration: none;
+  transition: color .15s;
+}
+.footer-legal a:hover { color: var(--accent); }
+
+/* ─── RESPONSIVE ────────────────────────────────── */
+@media (max-width: 1024px) {
+  .hero-planet { width: 380px; height: 380px; right: -40px; }
+}
+@media (max-width: 900px) {
+  .hero-planet { display: none; }
+  .planets-grid { grid-template-columns: 1fr 1fr; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 28px; }
+}
+@media (max-width: 640px) {
+  .nav-links .nav-link { display: none; }
+  .planets-grid { grid-template-columns: 1fr; }
+  .missions-grid { grid-template-columns: 1fr; }
+  .stats-inner { flex-wrap: wrap; }
+  .stat-item { min-width: 50%; border-right: none; border-bottom: 1px solid var(--border); padding: 16px; }
+  .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+  .hero-btns { flex-direction: column; }
+  .btn-primary, .btn-ghost { text-align: center; justify-content: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- Cursor -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursor-ring"></div>
+
+<!-- Star Canvas -->
+<canvas id="star-canvas"></canvas>
+
+<!-- ─── NAV ─────────────────────────────────────── -->
+<nav id="nav">
+  <div class="wrap">
+    <div class="nav-inner">
+      <div class="nav-logo">COSMO<span>.</span></div>
+      <div class="nav-links">
+        <a href="#planets" class="nav-link">Planets</a>
+        <a href="#missions" class="nav-link">Missions</a>
+        <a href="#timeline" class="nav-link">History</a>
+        <a href="#explore" class="nav-cta">Explore Now</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ─── HERO ─────────────────────────────────────── -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="pulse-dot"></span>
+        Live: Voyager 1 — 23.9 Billion km from Earth
+      </div>
+      <h1>
+        Beyond the
+        <span class="line2">Known Universe</span>
+      </h1>
+      <p class="hero-sub">
+        Journey through the cosmos. From the scorched surface of Mercury to the icy rings of Saturn — explore every corner of our solar system and beyond.
+      </p>
+      <div class="hero-btns">
+        <a href="#planets" class="btn-primary">🚀 Start Exploring</a>
+        <a href="#missions" class="btn-ghost">🛰️ Active Missions</a>
+      </div>
+    </div>
+    <div class="hero-planet"></div>
+  </div>
+</section>
+
+<!-- ─── STATS BAR ─────────────────────────────────── -->
+<div class="stats-bar">
+  <div class="wrap">
+    <div class="stats-inner">
+      <div class="stat-item">
+        <span class="stat-num">8</span>
+        <span class="stat-lbl">Planets in Solar System</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">200B+</span>
+        <span class="stat-lbl">Stars in Milky Way</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">46.5B</span>
+        <span class="stat-lbl">Light Years — Observable Universe</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">2 T+</span>
+        <span class="stat-lbl">Galaxies Estimated</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── PLANETS ───────────────────────────────────── -->
+<section class="planets-section" id="planets">
+  <div class="wrap">
+    <div class="section-tag">Solar System</div>
+    <h2 class="section-title">Explore the Planets</h2>
+    <p class="section-sub">Eight worlds, each unique, each extraordinary. Discover the forces that shape our cosmic neighbourhood.</p>
+
+    <div class="planets-grid">
+      <div class="planet-card card-mercury">
+        <div class="planet-num">01 / MERCURY</div>
+        <div class="planet-name">Mercury</div>
+        <div class="planet-type">Terrestrial Planet</div>
+        <div class="planet-desc">The smallest planet and closest to the Sun, Mercury has a cratered surface that resembles our Moon. Its thin atmosphere offers no protection from solar radiation.</div>
+        <div class="planet-stat">
+          <div class="planet-stat-item"><span class="planet-stat-val">430°C</span><span class="planet-stat-key">Max Temp</span></div>
+          <div class="planet-stat-item"><span class="planet-stat-val">88 days</span><span class="planet-stat-key">Orbit Period</span></div>
+          <div class="planet-stat-item"><span class="planet-stat-val">0</span><span class="planet-stat-key">Moons</span></div>
+        </div>
+      </div>
+
+      <div class="planet-card card-venus">
+        <div class="planet-num">02 / VENUS</div>
+        <div class="planet-name">Venus</div>
+        <div class="planet-type">Terrestrial Planet</div>
+        <div class="planet-desc">Often called Earth's twin due to similar size, but its thick CO₂ atmosphere creates a runaway greenhouse effect, making it the hottest planet.</div>
+        <div class="planet-stat">
+          <div class="planet-stat-item"><span class="planet-stat-val">465°C</span><span class="planet-stat-key">Avg Temp</span></div>
+          <div class="planet-stat-item"><span class="planet-stat-val">225 days</span><span class="planet-stat-key">Orbit Period</span></div>
+          <div class="planet-stat-item"><span class="planet-stat-val">0</span><span class="planet-stat-key">Moons</span></div>
+        </div>
+      </div>
+
+      <div class="planet-card card-earth">
+        <div class="planet-num">03 / EARTH</div>
+        <div class="planet-name">Earth</div>
+        <div class="planet-type">Ocean World</div>
+        <div class="planet-desc">Our pale blue dot — the only known world to harbour life. 71% of its surface is water, and its magnetic field shields us from solar wind.</div>
+        <div class="planet-stat">
+          <div class="planet-stat-item"><span class="planet-stat-val">15°C</span><span class="planet-stat-key">Avg Temp</span></div>
+          <div class="planet-stat-item"><span class="planet-stat-val">365 days</span><span class="planet-stat-key">Orbit Period</span></div>
+          <div class="planet-stat-item"><span class="planet-stat-val">1</span><span class="planet-stat-key">Moon</span></div>
+        </div>
+      </div>
+
+      <div class="planet-card card-mars">
+        <div class="planet-num">04 / MARS</div>
+        <div class="planet-name">Mars</div>
+        <div class="planet-type">Desert Planet</div>
+        <div class="planet-desc">The Red Planet hosts the tallest volcano in the solar system — Olympus Mons — and evidence suggests liquid water flowed across its surface billions of years ago.</div>
+        <div class="planet-stat">
+          <div class="planet-stat-item"><span class="planet-stat-val">-60°C</span><span class="planet-stat-key">Avg Temp</span></div>
+          <div class="planet-stat-item"><span class="planet-stat-val">687 days</span><span class="planet-stat-key">Orbit Period</span></div>
+          <div class="planet-stat-item"><span class="planet-stat-val">2</span><span class="planet-stat-key">Moons</span></div>
+        </div>
+      </div>
+
+      <div class="planet-card card-jupiter">
+        <div class="planet-num">05 / JUPITER</div>
+        <div class="planet-name">Jupiter</div>
+        <div class="planet-type">Gas Giant</div>
+        <div class="planet-desc">The Great Red Spot — a storm larger than Earth — has raged on Jupiter for over 350 years. Its massive gravity acts as a shield, deflecting comets and asteroids.</div>
+        <div class="planet-stat">
+          <div class="planet-stat-item"><span class="planet-stat-val">-110°C</span><span class="planet-stat-key">Avg Temp</span></div>
+          <div class="planet-stat-item"><span class="planet-stat-val">12 years</span><span class="planet-stat-key">Orbit Period</span></div>
+          <div class="planet-stat-item"><span class="planet-stat-val">95</span><span class="planet-stat-key">Moons</span></div>
+        </div>
+      </div>
+
+      <div class="planet-card card-saturn">
+        <div class="planet-num">06 / SATURN</div>
+        <div class="planet-name">Saturn</div>
+        <div class="planet-type">Ringed Gas Giant</div>
+        <div class="planet-desc">Saturn's iconic rings are made of ice and rock, stretching 282,000 km wide yet only 100 metres thick. It's the least dense planet — it would float on water.</div>
+        <div class="planet-stat">
+          <div class="planet-stat-item"><span class="planet-stat-val">-140°C</span><span class="planet-stat-key">Avg Temp</span></div>
+          <div class="planet-stat-item"><span class="planet-stat-val">29 years</span><span class="planet-stat-key">Orbit Period</span></div>
+          <div class="planet-stat-item"><span class="planet-stat-val">146</span><span class="planet-stat-key">Moons</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── MISSIONS ──────────────────────────────────── -->
+<section id="missions">
+  <div class="wrap">
+    <div class="section-tag">Space Missions</div>
+    <h2 class="section-title">Humanity's Greatest Journeys</h2>
+    <p class="section-sub">From the first satellite to rovers on Mars — explore the missions that changed our understanding of the cosmos.</p>
+
+    <div class="missions-grid">
+      <div class="mission-card">
+        <div class="mission-icon">🔭</div>
+        <div class="mission-content">
+          <h4>James Webb Space Telescope</h4>
+          <p>Webb peers back over 13.6 billion years to capture the first light of the universe, revealing galaxies never before seen by human eyes.</p>
+          <span class="mission-tag tag-active">Active</span>
+        </div>
+      </div>
+
+      <div class="mission-card">
+        <div class="mission-icon">🚗</div>
+        <div class="mission-content">
+          <h4>Perseverance Rover — Mars</h4>
+          <p>Perseverance searches for signs of ancient microbial life on Mars and is the first mission to collect and cache Martian rock samples for future return.</p>
+          <span class="mission-tag tag-active">Active</span>
+        </div>
+      </div>
+
+      <div class="mission-card">
+        <div class="mission-icon">🛸</div>
+        <div class="mission-content">
+          <h4>Voyager 1 — Interstellar Space</h4>
+          <p>Launched in 1977, Voyager 1 is humanity's most distant spacecraft, now travelling through interstellar space over 23 billion kilometres from Earth.</p>
+          <span class="mission-tag tag-active">Active</span>
+        </div>
+      </div>
+
+      <div class="mission-card">
+        <div class="mission-icon">🌙</div>
+        <div class="mission-content">
+          <h4>Artemis Program — Moon Return</h4>
+          <p>NASA's Artemis program aims to land the first woman and first person of colour on the lunar surface, establishing a sustainable presence on the Moon.</p>
+          <span class="mission-tag tag-planned">Planned</span>
+        </div>
+      </div>
+
+      <div class="mission-card">
+        <div class="mission-icon">🪐</div>
+        <div class="mission-content">
+          <h4>Cassini-Huygens — Saturn</h4>
+          <p>Cassini orbited Saturn for 13 years, revealing the complexity of its ring system and discovering geysers on the moon Enceladus that hint at subsurface oceans.</p>
+          <span class="mission-tag tag-complete">Completed 2017</span>
+        </div>
+      </div>
+
+      <div class="mission-card">
+        <div class="mission-icon">☀️</div>
+        <div class="mission-content">
+          <h4>Parker Solar Probe</h4>
+          <p>Flying closer to the Sun than any spacecraft before, Parker is sampling the solar corona at speeds up to 692,000 km/h — the fastest human-made object ever.</p>
+          <span class="mission-tag tag-active">Active</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── TIMELINE ──────────────────────────────────── -->
+<section class="timeline-section" id="timeline">
+  <div class="wrap">
+    <div class="section-tag">History of Space Exploration</div>
+    <h2 class="section-title">Milestones in Space</h2>
+    <p class="section-sub">Seven decades of reaching beyond our world — the moments that defined humanity's cosmic journey.</p>
+
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-dot">🛸</div>
+        <div class="timeline-body">
+          <div class="timeline-year">1957</div>
+          <div class="timeline-title">Sputnik 1 — First Satellite</div>
+          <div class="timeline-desc">The Soviet Union launches Sputnik 1, the first artificial satellite, sparking the Space Race and proving objects could orbit Earth.</div>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-dot">👨‍🚀</div>
+        <div class="timeline-body">
+          <div class="timeline-year">1961</div>
+          <div class="timeline-title">Yuri Gagarin — First Human in Space</div>
+          <div class="timeline-desc">Gagarin completes one orbit of Earth aboard Vostok 1, becoming the first human to journey into outer space and return safely.</div>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-dot">🌙</div>
+        <div class="timeline-body">
+          <div class="timeline-year">1969</div>
+          <div class="timeline-title">Apollo 11 — Moon Landing</div>
+          <div class="timeline-desc">Neil Armstrong and Buzz Aldrin become the first humans to walk on the Moon. Over 600 million people watch live on television.</div>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-dot">🚀</div>
+        <div class="timeline-body">
+          <div class="timeline-year">1998</div>
+          <div class="timeline-title">International Space Station — Assembly Begins</div>
+          <div class="timeline-desc">The first module of the ISS is launched, beginning humanity's permanent presence in space. Today it houses 6–7 astronauts continuously.</div>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-dot">🔭</div>
+        <div class="timeline-body">
+          <div class="timeline-year">2022</div>
+          <div class="timeline-title">James Webb Space Telescope — First Images</div>
+          <div class="timeline-desc">Webb releases its first full-colour images, showing the deepest infrared image of the universe ever taken — galaxies from over 13 billion years ago.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CTA ───────────────────────────────────────── -->
+<section class="cta-section" id="explore">
+  <div class="wrap">
+    <div class="section-tag" style="justify-content:center">Ready?</div>
+    <h2 class="section-title">The Universe Awaits</h2>
+    <p class="section-sub">The cosmos is vast and full of mystery. Every star you see is a sun, and around many of those suns — worlds. Your journey starts here.</p>
+    <div class="hero-btns">
+      <a href="#planets" class="btn-primary">🚀 Explore Planets</a>
+      <a href="#missions" class="btn-ghost">🛰️ View Missions</a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ────────────────────────────────────── -->
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="nav-logo">COSMO<span style="color:var(--accent)">.</span></div>
+        <p>A one-page journey through the cosmos. Built to inspire curiosity about the universe we live in.</p>
+        <div class="footer-socials">
+          <a href="#" class="social-btn">🐦</a>
+          <a href="#" class="social-btn">📸</a>
+          <a href="#" class="social-btn">▶️</a>
+          <a href="#" class="social-btn">💻</a>
+        </div>
+      </div>
+
+      <div class="footer-col">
+        <h5>Explore</h5>
+        <ul>
+          <li><a href="#planets">Planets</a></li>
+          <li><a href="#missions">Missions</a></li>
+          <li><a href="#timeline">History</a></li>
+          <li><a href="#explore">Get Started</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h5>Topics</h5>
+        <ul>
+          <li><a href="#">Black Holes</a></li>
+          <li><a href="#">Exoplanets</a></li>
+          <li><a href="#">Dark Matter</a></li>
+          <li><a href="#">Nebulae</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h5>About</h5>
+        <ul>
+          <li><a href="#">About COSMO</a></li>
+          <li><a href="#">Data Sources</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <span>© 2025 COSMO. Made with ✨ to inspire space curiosity.</span>
+      <div class="footer-legal">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ── Custom Cursor ─────────────────────────────── */
+const cursor = document.getElementById('cursor');
+const ring   = document.getElementById('cursor-ring');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; cursor.style.left = mx+'px'; cursor.style.top = my+'px'; });
+(function animRing(){
+  rx += (mx - rx) * .12;
+  ry += (my - ry) * .12;
+  ring.style.left = rx+'px';
+  ring.style.top  = ry+'px';
+  requestAnimationFrame(animRing);
+})();
+
+/* ── Star Canvas ───────────────────────────────── */
+const canvas = document.getElementById('star-canvas');
+const ctx    = canvas.getContext('2d');
+let W, H, stars = [];
+
+function resize() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', () => { resize(); initStars(); });
+
+function initStars() {
+  stars = [];
+  const count = Math.floor((W * H) / 4000);
+  for (let i = 0; i < count; i++) {
+    stars.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.4 + 0.2,
+      o: Math.random() * .7 + .1,
+      speed: Math.random() * .3 + .05,
+      phase: Math.random() * Math.PI * 2,
+    });
+  }
+}
+initStars();
+
+let tick = 0;
+function drawStars() {
+  ctx.clearRect(0, 0, W, H);
+  tick += .008;
+  stars.forEach(s => {
+    const alpha = s.o * (.6 + .4 * Math.sin(tick * s.speed + s.phase));
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(200,220,255,${alpha})`;
+    ctx.fill();
+  });
+  requestAnimationFrame(drawStars);
+}
+drawStars();
+
+/* ── Sticky Nav ─────────────────────────────────── */
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 60);
+});
+
+/* ── Scroll Reveal ──────────────────────────────── */
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: .12 });
+
+document.querySelectorAll('.planet-card, .mission-card').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(30px)';
+  el.style.transition = 'opacity .6s ease, transform .6s ease';
+  observer.observe(el);
+});
+</script>
+</body>
+</html>
